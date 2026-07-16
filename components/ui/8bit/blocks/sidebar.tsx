@@ -125,9 +125,9 @@ export function AppSidebar({ user }: { user: any }) {
       className={`${"retro"} border-r-4 border-foreground dark:border-ring`}
     >
       <SidebarHeader className="flex h-16 flex-row items-center gap-3 border-b-4 border-foreground px-6 dark:border-ring">
-        {/* <div className="flex h-8 w-8 items-center justify-center border-2 border-foreground bg-primary text-primary-foreground dark:border-ring"> */}
-        <img src="/img/SpatiaLab.png" className="size-12" alt="" />
-        {/* </div> */}
+        <div className="flex h-8 w-8 items-center justify-center border-2 border-foreground bg-background text-primary-foreground dark:border-ring">
+          <img src="/img/SpatiaLab.png" className="size-8" alt="" />
+        </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold tracking-wider uppercase">
             SpatiaLab

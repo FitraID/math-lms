@@ -14,18 +14,19 @@ export default async function CoursesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-black uppercase tracking-wider text-foreground">
+        <h1 className="text-xl font-black tracking-wider text-foreground uppercase">
           MY COURSES
         </h1>
         <p className="mt-1 text-[10px] text-muted-foreground">
-          {completedCount}/{courses.length} modules completed · Each course grants +50 XP
+          {completedCount}/{courses.length} modules completed · Each course
+          grants +50 XP
         </p>
       </div>
 
       {courses.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="text-3xl mb-3">📚</div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-3 text-3xl">📚</div>
+          <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
             No courses available yet
           </p>
           <p className="mt-1 text-[10px] text-muted-foreground">
@@ -40,7 +41,11 @@ export default async function CoursesPage() {
               <Card key={course.id} className="flex flex-col p-4">
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center border-2 border-foreground bg-primary/10 text-lg dark:border-ring">
-                    <BookOpen size={18} weight="fill" className="text-primary" />
+                    <BookOpen
+                      size={18}
+                      weight="fill"
+                      className="text-primary"
+                    />
                   </div>
                   {isCompleted ? (
                     <Badge variant="default" className="text-[9px]">
@@ -53,7 +58,7 @@ export default async function CoursesPage() {
                   )}
                 </div>
 
-                <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
                   {course.title}
                 </h3>
                 <p className="mt-1 flex-1 text-[10px] leading-relaxed text-muted-foreground">
@@ -67,8 +72,11 @@ export default async function CoursesPage() {
                     +{course.xpReward} XP
                   </span>
                   <Link href={`/courses/${course.id}`}>
-                    <Button size="sm" variant={isCompleted ? "outline" : "default"}>
-                      {isCompleted ? "REVIEW" : "START →"}
+                    <Button
+                      size="sm"
+                      variant={isCompleted ? "outline" : "default"}
+                    >
+                      {isCompleted ? "REVIEW" : "START >"}
                     </Button>
                   </Link>
                 </div>
