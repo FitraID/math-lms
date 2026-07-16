@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/ui/8bit/blocks/sidebar"
-// import { Sidebar } from "@/components/sidebar"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Bell } from "@phosphor-icons/react/dist/ssr"
 import { RetroModeSwitcher } from "@/components/ui/retro-mode-switcher"
 import {
@@ -50,12 +50,15 @@ export default async function DashboardLayout({
       {/* Right Content Area */}
       <div className="flex h-full flex-1 flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-6">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-              SYSTEM ONLINE / PIXEL_CORE_READY
-            </span>
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 md:px-6">
+          <div className="flex items-center gap-3 md:gap-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="hidden items-center gap-2 md:flex">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                SYSTEM ONLINE / SPARTIAL_LAB_READY
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {/* <Popover>
