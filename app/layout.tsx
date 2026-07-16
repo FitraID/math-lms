@@ -1,15 +1,22 @@
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google"
+import { Press_Start_2P } from "next/font/google"
 
 import "./globals.css"
+import { cn } from "@/lib/utils"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { Toaster } from "sonner"
 
-const fontSans = Geist({
+const pressStart2P = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-mono",
+})
+
+const pressStart2PSans = Press_Start_2P({
+  weight: "400",
   subsets: ["latin"],
   variable: "--font-sans",
 })
-
-const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'})
 
 export default function RootLayout({
   children,
@@ -20,10 +27,22 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontSans.variable, "font-mono", jetbrainsMono.variable)}
+      className={cn(
+        "antialiased",
+        pressStart2P.variable,
+        pressStart2PSans.variable,
+        pressStart2P.className
+      )}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          disableTransitionOnChange
+        >
+          <SidebarProvider>{children}</SidebarProvider>
+          <Toaster position="bottom-right" />
+        </ThemeProvider>
       </body>
     </html>
   )

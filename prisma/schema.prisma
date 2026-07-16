@@ -1,0 +1,193 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../lib/generated/prisma"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+model User {
+  id      String  @id @default(uuid()) // matches Supabase Auth user id
+  email   String  @unique
+  name    String?
+  role         Role    @default(USER)
+  totalXp      Int     @default(0)
+  questPoints  Int     @default(0)
+
+  courseProgresses CourseProgress[]
+  questAttempts    QuestAttempt[]
+  dungeonAttempts  DungeonAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Course ───────────────────────────────────────────────────────────────────
+model Course {
+  id          String @id @default(cuid())
+  title       String
+  description String
+  pdfUrl      String
+  xpReward    Int    @default(50)
+  order       Int    @default(0)
+
+  progresses CourseProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CourseProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+// ─── Quest ────────────────────────────────────────────────────────────────────
+model Quest {
+  id          String @id @default(cuid())
+  title            String
+  description      String
+  xpReward         Int    @default(100)
+  timeLimitSeconds Int    @default(60)
+  questPoint       Int    @default(10)
+
+  questions QuestQuestion[]
+  attempts  QuestAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestQuestion {
+  id       String  @id @default(cuid())
+  questId  String
+  text     String
+  imageUrl String?
+  type     String  @default("MULTIPLE_CHOICE") // MULTIPLE_CHOICE | DRAG_DROP
+  order    Int     @default(0)
+
+  quest   Quest                 @relation(fields: [questId], references: [id], onDelete: Cascade)
+  choices QuestQuestionChoice[]
+  answers QuestAttemptAnswer[]
+}
+
+model QuestQuestionChoice {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  imageUrl   String?
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
+  dropX      Float?  // target X position (0-100%) for drag & drop
+  dropY      Float?  // target Y position (0-100%) for drag & drop
+
+  question QuestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model QuestAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  questId     String
+  score       Int      @default(0)
+  totalScore  Int      @default(0)
+  xpEarned    Int      @default(0)
+  pointsEarned Int     @default(0)
+  completedAt DateTime @default(now())
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest   Quest              @relation(fields: [questId], references: [id], onDelete: Cascade)
+  answers QuestAttemptAnswer[]
+}
+
+model QuestAttemptAnswer {
+  id         String  @id @default(cuid())
+  attemptId  String
+  questionId String
+  choiceId   String
+  isCorrect  Boolean
+
+  attempt  QuestAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question QuestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+// ─── Dungeon ──────────────────────────────────────────────────────────────────
+model Dungeon {
+  id               String @id @default(cuid())
+  title            String
+  description      String
+  difficulty       String @default("NORMAL")
+  timeLimitSeconds Int    @default(1800)
+  xpReward         Int    @default(300)
+
+  questions DungeonQuestion[]
+  attempts  DungeonAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DungeonQuestion {
+  id        String @id @default(cuid())
+  dungeonId String
+  text      String
+  order     Int    @default(0)
+
+  dungeon Dungeon                 @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  choices DungeonQuestionChoice[]
+  answers DungeonAttemptAnswer[]
+}
+
+model DungeonQuestionChoice {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
+
+  question DungeonQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model DungeonAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  dungeonId   String
+  score       Int      @default(0)
+  totalScore  Int      @default(0)
+  timeSpent   Int      @default(0)
+  xpEarned    Int      @default(0)
+  completedAt DateTime @default(now())
+
+  user    User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dungeon Dungeon                @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  answers DungeonAttemptAnswer[]
+}
+
+model DungeonAttemptAnswer {
+  id         String  @id @default(cuid())
+  attemptId  String
+  questionId String
+  choiceId   String
+  isCorrect  Boolean
+
+  attempt  DungeonAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question DungeonQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
