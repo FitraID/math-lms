@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import logo from "../public/img/SpatiaLab.png"
 import {
   SquaresFour,
   User,
@@ -32,7 +33,7 @@ export function Sidebar() {
       {/* Header / Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
         <div className="flex h-8 w-8 items-center justify-center border-2 border-foreground/10 bg-primary text-primary-foreground">
-          <GameController size={18} className="animate-bounce" />
+          <img src="/img/SpatiaLab.png" className="size-12" alt="" />
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold tracking-wider uppercase">
