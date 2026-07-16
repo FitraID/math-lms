@@ -60,11 +60,11 @@ const navItems = [
   //   url: "/dungeon",
   //   icon: Skull,
   // },
-  {
-    name: "Leaderboard",
-    url: "/leaderboard",
-    icon: Medal,
-  },
+  // {
+  //   name: "Leaderboard",
+  //   url: "/leaderboard",
+  //   icon: Medal,
+  // },
 ]
 
 export function AppSidebar({ user }: { user: any }) {
@@ -126,11 +126,13 @@ export function AppSidebar({ user }: { user: any }) {
     >
       <SidebarHeader className="flex h-16 flex-row items-center gap-3 border-b-4 border-foreground px-6 dark:border-ring">
         <div className="flex h-8 w-8 items-center justify-center border-2 border-foreground bg-primary text-primary-foreground dark:border-ring">
-          <div className="animate-bounce">👾</div>
+          <div className="animate-bounce">
+            <img src="/img/SpatiaLab.png" className="size-12" alt="" />
+          </div>
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold tracking-wider uppercase">
-            MathLMS
+            SpatiaLab
           </span>
           <span className="text-[9px] tracking-widest text-muted-foreground uppercase">
             v1.0-engine
