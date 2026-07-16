@@ -13,10 +13,10 @@ export default function AuthLayout({
             👾
           </div>
           <h1 className="text-sm font-bold tracking-wider text-foreground uppercase">
-            MathLMS
+            Spatia Lab
           </h1>
           <p className="mt-1 text-[10px] tracking-widest text-muted-foreground uppercase">
-            Pixel Academy — v1.0
+            Online Academy — v1.0
           </p>
         </div>
         {children}

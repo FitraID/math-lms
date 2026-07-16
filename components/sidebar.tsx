@@ -36,10 +36,10 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold tracking-wider uppercase">
-            LMS_PIXEL 👾
+            Spatia Lab
           </span>
           <span className="text-[9px] tracking-widest text-muted-foreground uppercase">
-            v0.1.0-alpha
+            v1.0.0-alpha
           </span>
         </div>
       </div>

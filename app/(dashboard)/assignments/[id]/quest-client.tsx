@@ -100,11 +100,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
     setMcAnswers((prev) => ({ ...prev, [questionId]: choiceId }))
   }
 
-  function handleDrop(
-    questionId: string,
-    zoneId: string,
-    e: React.DragEvent
-  ) {
+  function handleDrop(questionId: string, zoneId: string, e: React.DragEvent) {
     e.preventDefault()
     if (!draggedChoiceId) return
     setDdAnswers((prev) => {
@@ -155,10 +151,12 @@ export default function QuestClient({ quest }: QuestClientProps) {
         for (const [zoneChoiceId, draggedId] of Object.entries(zoneMap)) {
           // The user placed draggedId onto the zone defined by zoneChoiceId
           // We send the zone's target position as the user's "answer" position
-          const zoneChoice = question.choices.find(
-            (c) => c.id === zoneChoiceId
-          )
-          if (zoneChoice && zoneChoice.dropX != null && zoneChoice.dropY != null) {
+          const zoneChoice = question.choices.find((c) => c.id === zoneChoiceId)
+          if (
+            zoneChoice &&
+            zoneChoice.dropX != null &&
+            zoneChoice.dropY != null
+          ) {
             placements.push({
               choiceId: draggedId,
               dropX: zoneChoice.dropX,
@@ -276,8 +274,8 @@ export default function QuestClient({ quest }: QuestClientProps) {
           {quest.title}
         </h1>
         <p className="mt-1 text-[10px] text-muted-foreground">
-          Answer all questions · +{quest.xpReward} XP max · +
-          {quest.questPoint} Quest Points
+          Answer all questions · +{quest.xpReward} XP max · +{quest.questPoint}{" "}
+          Quest Points
         </p>
       </div>
 
@@ -296,12 +294,10 @@ export default function QuestClient({ quest }: QuestClientProps) {
         <p className="mb-1 text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
           Question {currentIndex + 1}
           {currentQuestion.type === "DRAG_DROP" && (
-            <span className="ml-2 text-primary">
-              (Drag &amp; Drop)
-            </span>
+            <span className="ml-2 text-primary">(Drag &amp; Drop)</span>
           )}
         </p>
-        <h3 className="text-xs font-bold leading-relaxed text-foreground">
+        <h3 className="text-xs leading-relaxed font-bold text-foreground">
           {currentQuestion.text}
         </h3>
 
@@ -312,7 +308,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
             <img
               src={currentQuestion.imageUrl}
               alt="Question"
-              className="w-full object-contain"
+              className="object-contain"
             />
           </div>
         )}
@@ -333,8 +329,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
               {/* Invisible drop zones positioned on the image */}
               {currentQuestion.choices.map((zone) => {
                 if (zone.dropX == null || zone.dropY == null) return null
-                const droppedChoiceId =
-                  ddAnswers[currentQuestion.id]?.[zone.id]
+                const droppedChoiceId = ddAnswers[currentQuestion.id]?.[zone.id]
                 const droppedChoice = droppedChoiceId
                   ? currentQuestion.choices.find(
                       (c) => c.id === droppedChoiceId
@@ -345,9 +340,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
                   <div
                     key={zone.id}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) =>
-                      handleDrop(currentQuestion.id, zone.id, e)
-                    }
+                    onDrop={(e) => handleDrop(currentQuestion.id, zone.id, e)}
                     className="absolute flex items-center justify-center transition-all"
                     style={{
                       left: `${zone.dropX}%`,
@@ -368,10 +361,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
                         type="button"
                         className="flex h-full w-full items-center justify-center text-[10px] font-bold"
                         onClick={() =>
-                          handleRemoveDropped(
-                            currentQuestion.id,
-                            zone.id
-                          )
+                          handleRemoveDropped(currentQuestion.id, zone.id)
                         }
                         title="Click to remove"
                       >
@@ -435,7 +425,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
                   className={`w-full border-2 px-4 py-3 text-left text-xs font-bold transition-all ${
                     selected
                       ? "border-primary bg-primary/10 text-primary shadow-[2px_2px_0px_0px_var(--primary)]"
-                      : "border-foreground bg-background text-foreground hover:bg-muted shadow-[2px_2px_0px_0px_var(--foreground)]"
+                      : "border-foreground bg-background text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:bg-muted"
                   }`}
                 >
                   <div className="flex items-center gap-3">

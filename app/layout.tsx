@@ -34,6 +34,9 @@ export default function RootLayout({
         pressStart2P.className
       )}
     >
+      <head>
+        <title>SpatiaLab</title>
+      </head>
       <body>
         <ThemeProvider
           attribute="class"
