@@ -26,6 +26,7 @@ interface Choice {
 interface Question {
   id: string
   text: string
+  subText?: string | null
   type: string
   imageUrl?: string | null
   order: number
@@ -351,6 +352,12 @@ export default function QuestClient({ quest }: QuestClientProps) {
               alt="Question"
               className="object-contain"
             />
+          </div>
+        )}
+
+        {currentQuestion.subText && (
+          <div className="mt-3 text-xs leading-relaxed font-bold text-foreground">
+            {currentQuestion.subText}
           </div>
         )}
 
