@@ -17,10 +17,12 @@ interface ChoiceInput {
   imageFile?: File | null
   dropX?: number | null
   dropY?: number | null
+  dropRotation?: number | null
 }
 interface QuestionInput {
   text: string
-  type: "MULTIPLE_CHOICE" | "DRAG_DROP"
+  subText?: string
+  type: "MULTIPLE_CHOICE" | "DRAG_DROP" | "ESSAY"
   imageFile?: File | null
   choices: ChoiceInput[]
 }
@@ -28,6 +30,7 @@ interface QuestionInput {
 function emptyQuestion(): QuestionInput {
   return {
     text: "",
+    subText: "",
     type: "MULTIPLE_CHOICE",
     choices: [
       { text: "", isCorrect: true },
@@ -114,10 +117,6 @@ export default function AdminNewQuestPage() {
         return setError(`Question ${qi + 1} has no correct answer`)
       if (q.type === "DRAG_DROP" && !q.imageFile)
         return setError(`Question ${qi + 1} requires an image for Drag & Drop`)
-      if (q.type === "DRAG_DROP" && q.choices.some((c) => c.dropX == null))
-        return setError(
-          `Question ${qi + 1} is missing drop zones for some choices`
-        )
     }
 
     startTransition(async () => {
@@ -134,26 +133,30 @@ export default function AdminNewQuestPage() {
           }
 
           const finalChoices = []
-          for (const c of q.choices) {
-            let choiceImageUrl: string | undefined = undefined
-            if (c.imageFile) {
-              const fd = new FormData()
-              fd.append("file", c.imageFile)
-              const res = await uploadQuestImage(fd)
-              if (res.error) throw new Error(res.error)
-              choiceImageUrl = res.url
+          if (q.type !== "ESSAY") {
+            for (const c of q.choices) {
+              let choiceImageUrl: string | undefined = undefined
+              if (c.imageFile) {
+                const fd = new FormData()
+                fd.append("file", c.imageFile)
+                const res = await uploadQuestImage(fd)
+                if (res.error) throw new Error(res.error)
+                choiceImageUrl = res.url
+              }
+              finalChoices.push({
+                text: c.text,
+                imageUrl: choiceImageUrl,
+                dropX: c.dropX ?? undefined,
+                dropY: c.dropY ?? undefined,
+                dropRotation: c.dropRotation ?? undefined,
+                isCorrect: q.type === "DRAG_DROP" ? true : c.isCorrect,
+              })
             }
-            finalChoices.push({
-              text: c.text,
-              imageUrl: choiceImageUrl,
-              dropX: c.dropX ?? undefined,
-              dropY: c.dropY ?? undefined,
-              isCorrect: q.type === "DRAG_DROP" ? true : c.isCorrect,
-            })
           }
 
           finalQuestions.push({
             text: q.text,
+            subText: q.subText,
             type: q.type,
             imageUrl: questionImageUrl,
             choices: finalChoices,
@@ -288,6 +291,7 @@ export default function AdminNewQuestPage() {
                 >
                   <option value="MULTIPLE_CHOICE">Multiple Choice</option>
                   <option value="DRAG_DROP">Drag &amp; Drop Image</option>
+                  <option value="ESSAY">Essay</option>
                 </select>
               </div>
 
@@ -333,13 +337,15 @@ export default function AdminNewQuestPage() {
                         c.dropX != null && c.dropY != null ? (
                           <div
                             key={ci}
-                            className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center border-2 border-foreground bg-primary text-[10px] font-bold text-primary-foreground"
+                            className="absolute flex h-6 w-6 items-center justify-center border-2 border-foreground bg-primary text-[10px] font-bold text-primary-foreground"
                             style={{
                               left: `${c.dropX}%`,
                               top: `${c.dropY}%`,
+                              transform: `translate(-50%, -50%) rotate(${c.dropRotation ?? 0}deg)`,
+                              transition: 'transform 0.2s',
                             }}
                           >
-                            {ci + 1}
+                            <span style={{ transform: `rotate(${-(c.dropRotation ?? 0)}deg)` }}>{ci + 1}</span>
                           </div>
                         ) : null
                       )}
@@ -355,10 +361,23 @@ export default function AdminNewQuestPage() {
                 )}
               </div>
 
-              {/* Choices */}
-              <div className="space-y-2">
+              {/* Second Question Text (Below Image) */}
+              <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                  CHOICES
+                  SECOND QUESTION TEXT (BELOW IMAGE)
+                </label>
+                <Textarea
+                  value={q.subText || ""}
+                  onChange={(e) => updateQuestion(qi, { subText: e.target.value })}
+                  placeholder="Enter the secondary question text..."
+                />
+              </div>
+
+              {/* Choices */}
+              {q.type !== "ESSAY" && (
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                    CHOICES
                   {q.type === "MULTIPLE_CHOICE"
                     ? " (click radio = correct)"
                     : " (set drop zones on image)"}
@@ -430,9 +449,25 @@ export default function AdminNewQuestPage() {
                         </Button>
                       )}
                     </div>
+                    {q.type === "DRAG_DROP" && (
+                      <div className="flex items-center gap-4 pl-8">
+                        <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase whitespace-nowrap">
+                          ROTATION: {c.dropRotation ?? 0}°
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="360"
+                          value={c.dropRotation ?? 0}
+                          onChange={(e) => updateChoice(qi, ci, { dropRotation: parseInt(e.target.value) })}
+                          className="w-full accent-primary"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+              )}
             </Card>
           ))}
         </div>
