@@ -471,78 +471,100 @@ export default function QuestClient({ quest }: QuestClientProps) {
                           )}
                         </div>
                       </div>
-                      {/* Controls Panel — always visible when selected, hover on desktop */}
-                      {selectedDroppedId === choice.id && (
-                        <div className="absolute top-full left-1/2 z-30 mt-2 flex w-52 -translate-x-1/2 flex-col gap-2 rounded-sm border-2 border-foreground bg-background p-2 shadow-sm">
-                          <div className="text-[8px] font-bold text-primary tracking-widest uppercase text-center">
-                            Tap gambar untuk pindahkan
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[8px] font-bold text-muted-foreground uppercase">
-                              Rotate: {answerData.rotation}°
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="range"
-                                min="0"
-                                max="360"
-                                value={answerData.rotation}
-                                onChange={(e) =>
-                                  handleRotate(
-                                    currentQuestion.id,
-                                    choice.id,
-                                    parseInt(e.target.value)
-                                  )
-                                }
-                                className="w-full accent-primary"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <input
-                                type="number"
-                                min="0"
-                                max="360"
-                                value={answerData.rotation}
-                                onChange={(e) =>
-                                  handleRotate(
-                                    currentQuestion.id,
-                                    choice.id,
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="h-4 w-12 rounded-sm border border-input bg-muted px-1 text-center text-[10px]"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[8px] font-bold text-muted-foreground uppercase">
-                              Resize
-                            </span>
-                            <input
-                              type="range"
-                              min="0.2"
-                              max="3"
-                              step="0.1"
-                              value={answerData.scale || 1}
-                              onChange={(e) =>
-                                handleScale(
-                                  currentQuestion.id,
-                                  choice.id,
-                                  parseFloat(e.target.value)
-                                )
-                              }
-                              className="w-full accent-primary"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )
                 }
               )}
             </div>
+
+            {/* Controls Panel — placed outside the overflow-hidden container to prevent mobile clipping */}
+            {(() => {
+              if (!selectedDroppedId) return null
+              const choice = currentQuestion.choices.find(
+                (c) => c.id === selectedDroppedId
+              )
+              const answerData = ddAnswers[currentQuestion.id]?.[selectedDroppedId]
+              if (!choice || !answerData) return null
+
+              return (
+                <div className="mx-auto mt-3 max-w-3xl rounded-none border-2 border-primary bg-primary/5 p-4 text-left space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black tracking-widest text-primary uppercase">
+                      Pengaturan: {choice.text || "Item Gambar"}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-[9px] font-bold text-destructive hover:underline uppercase"
+                      onClick={() => setSelectedDroppedId(null)}
+                    >
+                      Selesai [X]
+                    </button>
+                  </div>
+                  <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Ketuk di mana saja pada gambar untuk memindahkan posisi item ini
+                  </div>
+                  <Separator className="bg-primary/20" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[9px] font-bold text-foreground uppercase">
+                        Rotasi: {answerData.rotation}°
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="0"
+                          max="360"
+                          value={answerData.rotation}
+                          onChange={(e) =>
+                            handleRotate(
+                              currentQuestion.id,
+                              choice.id,
+                              parseInt(e.target.value)
+                            )
+                          }
+                          className="w-full accent-primary"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          max="360"
+                          value={answerData.rotation}
+                          onChange={(e) =>
+                            handleRotate(
+                              currentQuestion.id,
+                              choice.id,
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          className="h-6 w-12 border-2 border-foreground bg-background px-1 text-center text-[10px] font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[9px] font-bold text-foreground uppercase">
+                        Ukuran (Resize): {Math.round((answerData.scale || 1) * 100)}%
+                      </span>
+                      <input
+                        type="range"
+                        min="0.2"
+                        max="3"
+                        step="0.1"
+                        value={answerData.scale || 1}
+                        onChange={(e) =>
+                          handleScale(
+                            currentQuestion.id,
+                            choice.id,
+                            parseFloat(e.target.value)
+                          )
+                        }
+                        className="w-full accent-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Draggable choices */}
             <div className="flex flex-wrap gap-2">
