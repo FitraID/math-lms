@@ -69,6 +69,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
   } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [draggedChoiceId, setDraggedChoiceId] = useState<string | null>(null)
+  const [selectedDroppedId, setSelectedDroppedId] = useState<string | null>(null)
 
   useEffect(() => {
     if (result || timeLeft <= 0) return
@@ -120,6 +121,15 @@ export default function QuestClient({ quest }: QuestClientProps) {
   }
 
   function handleImageClick(questionId: string, e: React.MouseEvent) {
+    // If a dropped item is selected (mobile move), move it
+    if (selectedDroppedId) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 100
+      const y = ((e.clientY - rect.top) / rect.height) * 100
+      placeItem(questionId, selectedDroppedId, x, y)
+      setSelectedDroppedId(null)
+      return
+    }
     if (!draggedChoiceId) return
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
@@ -173,6 +183,7 @@ export default function QuestClient({ quest }: QuestClientProps) {
       delete qAnswer[choiceId]
       return { ...prev, [questionId]: qAnswer }
     })
+    if (selectedDroppedId === choiceId) setSelectedDroppedId(null)
   }
 
   function handleNext() {
@@ -402,18 +413,32 @@ export default function QuestClient({ quest }: QuestClientProps) {
                   return (
                     <div
                       key={choice.id}
-                      className="group absolute z-10 flex flex-col items-center justify-center transition-all"
+                      className="absolute z-10 flex flex-col items-center justify-center"
                       style={{
                         left: `${answerData.dropX}%`,
                         top: `${answerData.dropY}%`,
                         transform: "translate(-50%, -50%)",
                       }}
                     >
-                      {/* Draggable container for already dropped item */}
+                      {/* Draggable + tappable container for already dropped item */}
                       <div
                         draggable
-                        onDragStart={() => setDraggedChoiceId(choice.id)}
-                        className="relative flex cursor-grab items-center justify-center active:cursor-grabbing"
+                        onDragStart={() => {
+                          setDraggedChoiceId(choice.id)
+                          setSelectedDroppedId(null)
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedDroppedId((prev) =>
+                            prev === choice.id ? null : choice.id
+                          )
+                          setDraggedChoiceId(null)
+                        }}
+                        className={`relative flex cursor-pointer items-center justify-center active:cursor-grabbing transition-all ${
+                          selectedDroppedId === choice.id
+                            ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent"
+                            : ""
+                        }`}
                       >
                         <button
                           type="button"
@@ -446,68 +471,73 @@ export default function QuestClient({ quest }: QuestClientProps) {
                           )}
                         </div>
                       </div>
-                      {/* Controls Panel */}
-                      <div className="absolute -bottom-16 left-1/2 z-30 mt-2 flex w-48 -translate-x-1/2 flex-col gap-2 rounded-sm border-2 border-foreground bg-background p-2 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-bold text-muted-foreground uppercase">
-                            Rotate (deg)
-                          </span>
-                          <div className="flex items-center gap-1">
+                      {/* Controls Panel — always visible when selected, hover on desktop */}
+                      {selectedDroppedId === choice.id && (
+                        <div className="absolute top-full left-1/2 z-30 mt-2 flex w-52 -translate-x-1/2 flex-col gap-2 rounded-sm border-2 border-foreground bg-background p-2 shadow-sm">
+                          <div className="text-[8px] font-bold text-primary tracking-widest uppercase text-center">
+                            Tap gambar untuk pindahkan
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold text-muted-foreground uppercase">
+                              Rotate: {answerData.rotation}°
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="range"
+                                min="0"
+                                max="360"
+                                value={answerData.rotation}
+                                onChange={(e) =>
+                                  handleRotate(
+                                    currentQuestion.id,
+                                    choice.id,
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                                className="w-full accent-primary"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <input
+                                type="number"
+                                min="0"
+                                max="360"
+                                value={answerData.rotation}
+                                onChange={(e) =>
+                                  handleRotate(
+                                    currentQuestion.id,
+                                    choice.id,
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="h-4 w-12 rounded-sm border border-input bg-muted px-1 text-center text-[10px]"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold text-muted-foreground uppercase">
+                              Resize
+                            </span>
                             <input
                               type="range"
-                              min="0"
-                              max="360"
-                              value={answerData.rotation}
+                              min="0.2"
+                              max="3"
+                              step="0.1"
+                              value={answerData.scale || 1}
                               onChange={(e) =>
-                                handleRotate(
+                                handleScale(
                                   currentQuestion.id,
                                   choice.id,
-                                  parseInt(e.target.value)
+                                  parseFloat(e.target.value)
                                 )
                               }
                               className="w-full accent-primary"
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <input
-                              type="number"
-                              min="0"
-                              max="360"
-                              value={answerData.rotation}
-                              onChange={(e) =>
-                                handleRotate(
-                                  currentQuestion.id,
-                                  choice.id,
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              className="h-4 rounded-sm border border-input bg-muted px-1 text-center text-[10px]"
-                              onClick={(e) => e.stopPropagation()}
-                            />
                           </div>
                         </div>
-
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-bold text-muted-foreground uppercase">
-                            Resize
-                          </span>
-                          <input
-                            type="range"
-                            min="0.2"
-                            max="3"
-                            step="0.1"
-                            value={answerData.scale || 1}
-                            onChange={(e) =>
-                              handleScale(
-                                currentQuestion.id,
-                                choice.id,
-                                parseFloat(e.target.value)
-                              )
-                            }
-                            className="w-full accent-primary"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )
                 }
