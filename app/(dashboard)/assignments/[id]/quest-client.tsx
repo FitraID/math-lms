@@ -115,12 +115,25 @@ export default function QuestClient({ quest }: QuestClientProps) {
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
+    placeItem(questionId, draggedChoiceId, x, y)
+    setDraggedChoiceId(null)
+  }
 
+  function handleImageClick(questionId: string, e: React.MouseEvent) {
+    if (!draggedChoiceId) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+    placeItem(questionId, draggedChoiceId, x, y)
+    setDraggedChoiceId(null)
+  }
+
+  function placeItem(questionId: string, choiceId: string, x: number, y: number) {
     setDdAnswers((prev) => {
       const qAnswer = { ...(prev[questionId] || {}) }
       // preserve rotation and scale if moving an already dropped item
-      const existing = qAnswer[draggedChoiceId]
-      qAnswer[draggedChoiceId] = {
+      const existing = qAnswer[choiceId]
+      qAnswer[choiceId] = {
         dropX: x,
         dropY: y,
         rotation: existing ? existing.rotation : 0,
@@ -128,7 +141,6 @@ export default function QuestClient({ quest }: QuestClientProps) {
       }
       return { ...prev, [questionId]: qAnswer }
     })
-    setDraggedChoiceId(null)
   }
 
   function handleRotate(
@@ -228,7 +240,8 @@ export default function QuestClient({ quest }: QuestClientProps) {
   function formatTime(seconds: number) {
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
-    return `${m}:${s.toString().padStart(2, "0")}`
+    if (m > 0) return `${m} Menit ${s} Detik`
+    return `${s} Detik`
   }
 
   // ── Result Screen ──
@@ -367,9 +380,10 @@ export default function QuestClient({ quest }: QuestClientProps) {
           <div className="space-y-4 text-center">
             {/* Drop Image with invisible zones */}
             <div
-              className="relative inline-block w-full max-w-3xl overflow-hidden border-2 border-foreground bg-background"
+              className="relative inline-block w-full max-w-3xl overflow-hidden border-2 border-foreground bg-background cursor-crosshair"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDrop(currentQuestion.id, e)}
+              onClick={(e) => handleImageClick(currentQuestion.id, e)}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -511,6 +525,12 @@ export default function QuestClient({ quest }: QuestClientProps) {
                     draggable
                     onDragStart={() => setDraggedChoiceId(choice.id)}
                     onDragEnd={() => setDraggedChoiceId(null)}
+                    onClick={() => setDraggedChoiceId(choice.id)}
+                    className={`cursor-pointer transition-all ${
+                      draggedChoiceId === choice.id
+                        ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                        : ""
+                    }`}
                   >
                     {choice.imageUrl && (
                       // eslint-disable-next-line @next/next/no-img-element

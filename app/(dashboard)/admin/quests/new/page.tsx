@@ -48,7 +48,7 @@ export default function AdminNewQuestPage() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [xpReward, setXpReward] = useState(100)
-  const [timeLimitSeconds, setTimeLimitSeconds] = useState(60)
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(1)
   const [questPoint, setQuestPoint] = useState(10)
   const [questions, setQuestions] = useState<QuestionInput[]>([emptyQuestion()])
   const [settingDropZone, setSettingDropZone] = useState<{
@@ -167,7 +167,7 @@ export default function AdminNewQuestPage() {
           title,
           description,
           xpReward,
-          timeLimitSeconds,
+          timeLimitSeconds: timeLimitMinutes * 60,
           questPoint,
           questions: finalQuestions,
         })
@@ -234,12 +234,12 @@ export default function AdminNewQuestPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                  TIME LIMIT (SEC)
+                  TIME LIMIT (MINUTES)
                 </label>
                 <Input
                   type="number"
-                  value={timeLimitSeconds}
-                  onChange={(e) => setTimeLimitSeconds(Number(e.target.value))}
+                  value={timeLimitMinutes}
+                  onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
                   min={1}
                 />
               </div>
