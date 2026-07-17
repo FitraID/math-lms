@@ -42,7 +42,7 @@ export async function getQuestWithQuestions(questId: string) {
 export async function submitQuestAttempt(
   questId: string,
   answers: Record<string, string>, // { questionId: choiceId } for MC
-  dragDropAnswers?: Record<string, Array<{ choiceId: string; dropX: number; dropY: number }>> // { questionId: [...placements] } for DD
+  dragDropAnswers?: Record<string, Array<{ choiceId: string; dropX: number; dropY: number; dropRotation: number }>> // { questionId: [...placements] } for DD
 ) {
   const user = await getCurrentUser()
   if (!user) return { error: "Not authenticated" }
@@ -58,24 +58,27 @@ export async function submitQuestAttempt(
   if (!quest) return { error: "Quest not found" }
 
   let correctCount = 0
+  let totalMaxScore = 0
   const answerData: Array<{
     questionId: string
     choiceId: string
     isCorrect: boolean
   }> = []
 
-  const DRAG_DROP_THRESHOLD = 15 // percentage distance threshold for correct placement
+  const DRAG_DROP_THRESHOLD = 20 // generous percentage distance threshold for correct placement
 
   for (const question of quest.questions) {
     if (question.type === "DRAG_DROP") {
-      // Grade drag & drop by comparing user's drop position to the target position
       const placements = dragDropAnswers?.[question.id] || []
-      let allCorrect = true
-
+      
       for (const choice of question.choices) {
+        // Skip choices that don't have a drop zone defined (optional zones)
+        if (choice.dropX == null || choice.dropY == null) continue
+
+        totalMaxScore++
+
         const placement = placements.find((p) => p.choiceId === choice.id)
-        if (!placement || choice.dropX == null || choice.dropY == null) {
-          allCorrect = false
+        if (!placement) {
           answerData.push({ questionId: question.id, choiceId: choice.id, isCorrect: false })
           continue
         }
@@ -84,14 +87,30 @@ export async function submitQuestAttempt(
         const dx = placement.dropX - choice.dropX
         const dy = placement.dropY - choice.dropY
         const distance = Math.sqrt(dx * dx + dy * dy)
-        const isCorrect = distance <= DRAG_DROP_THRESHOLD
+        let isCorrect = distance <= DRAG_DROP_THRESHOLD
 
-        if (!isCorrect) allCorrect = false
+        // Grade rotation if choice specifies a dropRotation
+        if (isCorrect && choice.dropRotation != null) {
+          // Calculate shortest angular distance taking 360 wrap around into account
+          let diff = Math.abs((placement.dropRotation % 360) - (choice.dropRotation % 360))
+          if (diff > 180) diff = 360 - diff
+          if (diff > 15) { // 15 degrees tolerance
+            isCorrect = false
+          }
+        }
+
+        if (isCorrect) correctCount++
         answerData.push({ questionId: question.id, choiceId: choice.id, isCorrect })
       }
-
-      if (allCorrect) correctCount++
+    } else if (question.type === "ESSAY") {
+      totalMaxScore++
+      const essayText = answers[question.id]
+      const isFilled = essayText && essayText.trim().length > 0
+      if (isFilled) correctCount++
+      // Hack to store essay text: store it in choiceId since it's just a string field
+      answerData.push({ questionId: question.id, choiceId: essayText || "[EMPTY]", isCorrect: !!isFilled })
     } else {
+      totalMaxScore++
       // Standard multiple choice grading
       const selectedChoiceId = answers[question.id]
       if (!selectedChoiceId) {
@@ -105,7 +124,7 @@ export async function submitQuestAttempt(
     }
   }
 
-  const totalScore = quest.questions.length
+  const totalScore = totalMaxScore
   const xpEarned =
     correctCount === totalScore
       ? quest.xpReward

@@ -81,6 +81,7 @@ model QuestQuestion {
   id       String  @id @default(cuid())
   questId  String
   text     String
+  subText  String?
   imageUrl String?
   type     String  @default("MULTIPLE_CHOICE") // MULTIPLE_CHOICE | DRAG_DROP
   order    Int     @default(0)
@@ -99,6 +100,7 @@ model QuestQuestionChoice {
   order      Int     @default(0)
   dropX      Float?  // target X position (0-100%) for drag & drop
   dropY      Float?  // target Y position (0-100%) for drag & drop
+  dropRotation Float?
 
   question QuestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }

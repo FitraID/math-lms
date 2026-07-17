@@ -60,11 +60,11 @@ const navItems = [
   //   url: "/dungeon",
   //   icon: Skull,
   // },
-  // {
-  //   name: "Leaderboard",
-  //   url: "/leaderboard",
-  //   icon: Medal,
-  // },
+  {
+    name: "Leaderboard",
+    url: "/leaderboard",
+    icon: Medal,
+  },
 ]
 
 export function AppSidebar({ user }: { user: any }) {

@@ -12,18 +12,19 @@ export default async function QuestPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-black uppercase tracking-wider text-foreground">
+        <h1 className="text-xl font-black tracking-wider text-foreground uppercase">
           QUEST HUB
         </h1>
         <p className="mt-1 text-[10px] text-muted-foreground">
-          Complete quests to earn XP · Each quest grants up to +100 XP based on score
+          Complete quests to earn XP · Each quest grants up to +100 XP based on
+          score
         </p>
       </div>
 
       {quests.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="text-3xl mb-3">⚔️</div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-3 text-3xl">⚔️</div>
+          <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
             No quests available yet
           </p>
         </Card>
@@ -31,7 +32,9 @@ export default async function QuestPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {quests.map((quest) => {
             const attempted = quest.bestAttempt !== null
-            const perfect = quest.bestAttempt?.score === quest.bestAttempt?.totalScore && attempted
+            const perfect =
+              quest.bestAttempt?.score === quest.bestAttempt?.totalScore &&
+              attempted
             return (
               <Card key={quest.id} className="flex flex-col p-4">
                 <div className="mb-3 flex items-start justify-between gap-2">
@@ -39,17 +42,22 @@ export default async function QuestPage() {
                     <Sword size={18} weight="fill" className="text-secondary" />
                   </div>
                   {perfect ? (
-                    <Badge variant="default" className="text-[9px]">PERFECT ★</Badge>
+                    <Badge variant="default" className="text-[9px]">
+                      PERFECT ★
+                    </Badge>
                   ) : attempted ? (
                     <Badge variant="outline" className="text-[9px]">
-                      SCORE: {quest.bestAttempt!.score}/{quest.bestAttempt!.totalScore}
+                      SCORE: {quest.bestAttempt!.score}/
+                      {quest.bestAttempt!.totalScore}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px]">NEW</Badge>
+                    <Badge variant="outline" className="text-[9px]">
+                      NEW
+                    </Badge>
                   )}
                 </div>
 
-                <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
                   {quest.title}
                 </h3>
                 <p className="mt-1 flex-1 text-[10px] leading-relaxed text-muted-foreground">
@@ -68,8 +76,11 @@ export default async function QuestPage() {
                     </span>
                   </div>
                   <Link href={`/assignments/${quest.id}`}>
-                    <Button size="sm" variant={attempted ? "outline" : "default"}>
-                      {attempted ? "RETRY" : "START →"}
+                    <Button
+                      size="sm"
+                      variant={attempted ? "outline" : "default"}
+                    >
+                      {attempted ? "RETRY" : "START >"}
                     </Button>
                   </Link>
                 </div>

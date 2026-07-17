@@ -108,14 +108,16 @@ export async function adminCreateQuest(data: {
   questPoint: number
   questions: Array<{
     text: string
+    subText?: string
     imageUrl?: string
-    type: string // "MULTIPLE_CHOICE" | "DRAG_DROP"
+    type: string // "MULTIPLE_CHOICE" | "DRAG_DROP" | "ESSAY"
     choices: Array<{
       text: string
       imageUrl?: string
       isCorrect: boolean
       dropX?: number
       dropY?: number
+      dropRotation?: number
     }>
   }>
 }) {
@@ -131,6 +133,7 @@ export async function adminCreateQuest(data: {
       questions: {
         create: data.questions.map((q, qi) => ({
           text: q.text,
+          subText: q.subText || null,
           imageUrl: q.imageUrl || null,
           type: q.type,
           order: qi,
@@ -142,6 +145,7 @@ export async function adminCreateQuest(data: {
               order: ci,
               dropX: c.dropX ?? null,
               dropY: c.dropY ?? null,
+              dropRotation: c.dropRotation ?? null,
             })),
           },
         })),

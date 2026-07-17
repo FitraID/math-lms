@@ -51,7 +51,13 @@ export default function QuestClient({ quest }: QuestClientProps) {
   // DD answers: { questionId: { zoneChoiceId: draggedChoiceId } }
   const [mcAnswers, setMcAnswers] = useState<Record<string, string>>({})
   const [ddAnswers, setDdAnswers] = useState<
-    Record<string, Record<string, string>>
+    Record<
+      string,
+      Record<
+        string,
+        { dropX: number; dropY: number; rotation: number; scale: number }
+      >
+    >
   >({})
   const [timeLeft, setTimeLeft] = useState(quest.timeLimitSeconds)
   const [result, setResult] = useState<{
@@ -87,11 +93,13 @@ export default function QuestClient({ quest }: QuestClientProps) {
 
   let isAnswered = false
   if (currentQuestion?.type === "DRAG_DROP") {
-    const dragState = ddAnswers[currentQuestion.id] || {}
+    const droppedCount = Object.keys(ddAnswers[currentQuestion.id] || {}).length
     const zonesNeeded = currentQuestion.choices.filter(
       (c) => c.dropX != null
     ).length
-    isAnswered = Object.keys(dragState).length >= zonesNeeded
+    isAnswered = droppedCount >= zonesNeeded
+  } else if (currentQuestion?.type === "ESSAY") {
+    isAnswered = !!mcAnswers[currentQuestion?.id]?.trim()
   } else {
     isAnswered = !!mcAnswers[currentQuestion?.id]
   }
@@ -100,21 +108,56 @@ export default function QuestClient({ quest }: QuestClientProps) {
     setMcAnswers((prev) => ({ ...prev, [questionId]: choiceId }))
   }
 
-  function handleDrop(questionId: string, zoneId: string, e: React.DragEvent) {
+  function handleDrop(questionId: string, e: React.DragEvent) {
     e.preventDefault()
     if (!draggedChoiceId) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+
     setDdAnswers((prev) => {
       const qAnswer = { ...(prev[questionId] || {}) }
-      qAnswer[zoneId] = draggedChoiceId
+      // preserve rotation and scale if moving an already dropped item
+      const existing = qAnswer[draggedChoiceId]
+      qAnswer[draggedChoiceId] = {
+        dropX: x,
+        dropY: y,
+        rotation: existing ? existing.rotation : 0,
+        scale: existing ? existing.scale : 1,
+      }
       return { ...prev, [questionId]: qAnswer }
     })
     setDraggedChoiceId(null)
   }
 
-  function handleRemoveDropped(questionId: string, zoneId: string) {
+  function handleRotate(
+    questionId: string,
+    choiceId: string,
+    rotation: number
+  ) {
     setDdAnswers((prev) => {
       const qAnswer = { ...(prev[questionId] || {}) }
-      delete qAnswer[zoneId]
+      if (qAnswer[choiceId]) {
+        qAnswer[choiceId] = { ...qAnswer[choiceId], rotation }
+      }
+      return { ...prev, [questionId]: qAnswer }
+    })
+  }
+
+  function handleScale(questionId: string, choiceId: string, scale: number) {
+    setDdAnswers((prev) => {
+      const qAnswer = { ...(prev[questionId] || {}) }
+      if (qAnswer[choiceId]) {
+        qAnswer[choiceId] = { ...qAnswer[choiceId], scale }
+      }
+      return { ...prev, [questionId]: qAnswer }
+    })
+  }
+
+  function handleRemoveDropped(questionId: string, choiceId: string) {
+    setDdAnswers((prev) => {
+      const qAnswer = { ...(prev[questionId] || {}) }
+      delete qAnswer[choiceId]
       return { ...prev, [questionId]: qAnswer }
     })
   }
@@ -136,10 +179,15 @@ export default function QuestClient({ quest }: QuestClientProps) {
       // Build drag & drop answers for the server
       const dragDropForServer: Record<
         string,
-        Array<{ choiceId: string; dropX: number; dropY: number }>
+        Array<{
+          choiceId: string
+          dropX: number
+          dropY: number
+          dropRotation: number
+        }>
       > = {}
 
-      for (const [questionId, zoneMap] of Object.entries(ddAnswers)) {
+      for (const [questionId, choiceMap] of Object.entries(ddAnswers)) {
         const question = quest.questions.find((q) => q.id === questionId)
         if (!question) continue
 
@@ -147,22 +195,15 @@ export default function QuestClient({ quest }: QuestClientProps) {
           choiceId: string
           dropX: number
           dropY: number
+          dropRotation: number
         }> = []
-        for (const [zoneChoiceId, draggedId] of Object.entries(zoneMap)) {
-          // The user placed draggedId onto the zone defined by zoneChoiceId
-          // We send the zone's target position as the user's "answer" position
-          const zoneChoice = question.choices.find((c) => c.id === zoneChoiceId)
-          if (
-            zoneChoice &&
-            zoneChoice.dropX != null &&
-            zoneChoice.dropY != null
-          ) {
-            placements.push({
-              choiceId: draggedId,
-              dropX: zoneChoice.dropX,
-              dropY: zoneChoice.dropY,
-            })
-          }
+        for (const [choiceId, answerData] of Object.entries(choiceMap)) {
+          placements.push({
+            choiceId,
+            dropX: answerData.dropX,
+            dropY: answerData.dropY,
+            dropRotation: answerData.rotation,
+          })
         }
         dragDropForServer[questionId] = placements
       }
@@ -316,78 +357,146 @@ export default function QuestClient({ quest }: QuestClientProps) {
         <Separator className="my-4" />
 
         {currentQuestion.type === "DRAG_DROP" ? (
-          // ── Drag & Drop UI ──
-          <div className="space-y-4">
+          <div className="space-y-4 text-center">
             {/* Drop Image with invisible zones */}
-            <div className="relative inline-block w-full overflow-hidden border-2 border-foreground">
+            <div
+              className="relative inline-block w-full max-w-3xl overflow-hidden border-2 border-foreground bg-background"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(currentQuestion.id, e)}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={currentQuestion.imageUrl!}
                 alt="Question"
-                className="w-full"
+                className="w-full object-contain"
               />
-              {/* Invisible drop zones positioned on the image */}
-              {currentQuestion.choices.map((zone) => {
-                if (zone.dropX == null || zone.dropY == null) return null
-                const droppedChoiceId = ddAnswers[currentQuestion.id]?.[zone.id]
-                const droppedChoice = droppedChoiceId
-                  ? currentQuestion.choices.find(
-                      (c) => c.id === droppedChoiceId
-                    )
-                  : null
+              {/* Render dropped choices on the image */}
+              {Object.entries(ddAnswers[currentQuestion.id] || {}).map(
+                ([choiceId, answerData]) => {
+                  const choice = currentQuestion.choices.find(
+                    (c) => c.id === choiceId
+                  )
+                  if (!choice) return null
 
-                return (
-                  <div
-                    key={zone.id}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleDrop(currentQuestion.id, zone.id, e)}
-                    className="absolute flex items-center justify-center transition-all"
-                    style={{
-                      left: `${zone.dropX}%`,
-                      top: `${zone.dropY}%`,
-                      width: "100px",
-                      height: "40px",
-                      transform: "translate(-50%, -50%)",
-                      border: droppedChoice
-                        ? "2px solid var(--foreground)"
-                        : "2px dashed transparent",
-                      background: droppedChoice
-                        ? "var(--background)"
-                        : "transparent",
-                    }}
-                  >
-                    {droppedChoice ? (
-                      <button
-                        type="button"
-                        className="flex h-full w-full items-center justify-center text-[10px] font-bold"
-                        onClick={() =>
-                          handleRemoveDropped(currentQuestion.id, zone.id)
-                        }
-                        title="Click to remove"
+                  return (
+                    <div
+                      key={choice.id}
+                      className="group absolute z-10 flex flex-col items-center justify-center transition-all"
+                      style={{
+                        left: `${answerData.dropX}%`,
+                        top: `${answerData.dropY}%`,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    >
+                      {/* Draggable container for already dropped item */}
+                      <div
+                        draggable
+                        onDragStart={() => setDraggedChoiceId(choice.id)}
+                        className="relative flex cursor-grab items-center justify-center active:cursor-grabbing"
                       >
-                        {droppedChoice.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={droppedChoice.imageUrl}
-                            alt={droppedChoice.text}
-                            className="h-8 object-contain"
+                        <button
+                          type="button"
+                          className="absolute -top-2 -right-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-foreground bg-destructive text-xs text-white"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveDropped(currentQuestion.id, choice.id)
+                          }}
+                          title="Remove"
+                        >
+                          X
+                        </button>
+                        <div
+                          className="flex h-full w-full items-center justify-center text-[10px] font-bold"
+                          style={{
+                            transform: `rotate(${answerData.rotation}deg) scale(${answerData.scale || 1})`,
+                          }}
+                        >
+                          {choice.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={choice.imageUrl}
+                              alt={choice.text}
+                              className="h-16 object-contain drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]"
+                            />
+                          ) : (
+                            <div className="border-2 border-foreground bg-background px-2 py-1 whitespace-nowrap">
+                              {choice.text}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Controls Panel */}
+                      <div className="absolute -bottom-16 left-1/2 z-30 mt-2 flex w-48 -translate-x-1/2 flex-col gap-2 rounded-sm border-2 border-foreground bg-background p-2 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[8px] font-bold text-muted-foreground uppercase">
+                            Rotate (deg)
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="range"
+                              min="0"
+                              max="360"
+                              value={answerData.rotation}
+                              onChange={(e) =>
+                                handleRotate(
+                                  currentQuestion.id,
+                                  choice.id,
+                                  parseInt(e.target.value)
+                                )
+                              }
+                              className="w-full accent-primary"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              max="360"
+                              value={answerData.rotation}
+                              onChange={(e) =>
+                                handleRotate(
+                                  currentQuestion.id,
+                                  choice.id,
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="h-4 rounded-sm border border-input bg-muted px-1 text-center text-[10px]"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[8px] font-bold text-muted-foreground uppercase">
+                            Resize
+                          </span>
+                          <input
+                            type="range"
+                            min="0.2"
+                            max="3"
+                            step="0.1"
+                            value={answerData.scale || 1}
+                            onChange={(e) =>
+                              handleScale(
+                                currentQuestion.id,
+                                choice.id,
+                                parseFloat(e.target.value)
+                              )
+                            }
+                            className="w-full accent-primary"
+                            onClick={(e) => e.stopPropagation()}
                           />
-                        ) : (
-                          droppedChoice.text
-                        )}
-                      </button>
-                    ) : null}
-                  </div>
-                )
-              })}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+              )}
             </div>
 
             {/* Draggable choices */}
             <div className="flex flex-wrap gap-2">
               {currentQuestion.choices.map((choice) => {
-                const isDropped = Object.values(
-                  ddAnswers[currentQuestion.id] || {}
-                ).includes(choice.id)
+                const isDropped = !!ddAnswers[currentQuestion.id]?.[choice.id]
                 if (isDropped) return null
                 return (
                   <div
@@ -395,7 +504,6 @@ export default function QuestClient({ quest }: QuestClientProps) {
                     draggable
                     onDragStart={() => setDraggedChoiceId(choice.id)}
                     onDragEnd={() => setDraggedChoiceId(null)}
-                    className="cursor-grab border-2 border-foreground bg-background px-3 py-2 text-[10px] font-bold shadow-[2px_2px_0px_0px_var(--foreground)] active:cursor-grabbing"
                   >
                     {choice.imageUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -410,6 +518,16 @@ export default function QuestClient({ quest }: QuestClientProps) {
                 )
               })}
             </div>
+          </div>
+        ) : currentQuestion.type === "ESSAY" ? (
+          // ── Essay UI ──
+          <div className="space-y-2">
+            <textarea
+              className="w-full border-2 border-foreground bg-background p-3 text-xs font-bold text-foreground outline-none shadow-[2px_2px_0px_0px_var(--foreground)] focus:border-primary focus:shadow-[2px_2px_0px_0px_var(--primary)] resize-y min-h-[120px]"
+              placeholder="Write your answer here..."
+              value={mcAnswers[currentQuestion.id] || ""}
+              onChange={(e) => handleSelectChoice(currentQuestion.id, e.target.value)}
+            />
           </div>
         ) : (
           // ── Multiple Choice UI ──
